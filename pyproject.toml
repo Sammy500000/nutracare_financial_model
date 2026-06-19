@@ -1,0 +1,72 @@
+# VNDP workspace root — uv workspace (PEP 621). Tooling config only; members carry their own deps.
+# Per 04_REPOSITORY_STRUCTURE §1/§3 and 09_CLAUDE_MD §3.
+
+[project]
+name = "vndp"
+version = "0.0.0"
+description = "Valencia Nutracare Decision Platform — workspace root"
+requires-python = ">=3.12"
+readme = "README.md"
+
+[tool.uv.workspace]
+members = ["libs/*", "services/*", "apps/*"]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "mypy>=1.14",
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6",
+    "openpyxl>=3.1",
+    "pre-commit>=4",
+    "pydantic>=2",
+]
+
+# --- ruff: lint + format + import order ---
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["libs", "services", "apps"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "C4", "SIM", "TCH", "RUF"]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.lint.isort]
+known-first-party = ["vndp_domain", "vndp_db", "vndp_graph", "vndp_vectors", "vndp_sim", "vndp_agents", "vndp_mcp", "vndp_events", "vndp_shared"]
+
+# --- mypy: strict typing ---
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]
+exclude = ["migrations/", "workflows_n8n/"]
+
+# --- pytest + markers ---
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests", "libs", "services", "apps"]
+markers = [
+    "unit: fast, no IO",
+    "integration: testcontainers PG/Neo4j/Qdrant",
+    "e2e: full stack",
+    "golden: engine vs workbook Year-1 (acceptance gate)",
+    "contract: API/event-shape",
+    "security: RLS/ACL/no-capital-move",
+]
+
+# --- coverage gate (>=85% on domain/sim per 09 §11) ---
+[tool.coverage.run]
+branch = true
+source = ["libs/vndp_domain", "libs/vndp_sim"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true

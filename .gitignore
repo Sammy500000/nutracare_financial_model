@@ -1,0 +1,52 @@
+# --- Secrets (NEVER commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+creds/
+workflows_n8n/creds/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.uv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# --- Node / n8n custom nodes ---
+node_modules/
+npm-debug.log*
+
+# --- Data services (local volumes if bind-mounted) ---
+infra/docker/data/
+*.dump
+
+# --- Workbook scratch / recalc temp ---
+workbook/*.tmp.xlsx
+~$*.xlsx
+
+# --- IDE / OS ---
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# --- Build/scratch ---
+exports/
+snapshots/
+*.log
+
+# stray artifact
+(val)

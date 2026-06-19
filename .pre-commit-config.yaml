@@ -1,0 +1,35 @@
+# Local commit gates (04 §7). Install: `uv run pre-commit install`.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        additional_dependencies: [pydantic]
+        exclude: ^(migrations/|workflows_n8n/)
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: [--skip, "*.xlsx,*.lock,docs/*"]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: workbook-zero-error-gate
+        name: workbook zero-error gate
+        entry: python workbook/verify.py
+        language: system
+        files: ^workbook/.*\.xlsx$
+        pass_filenames: false

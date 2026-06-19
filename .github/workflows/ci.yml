@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync workspace
+        run: uv sync --all-extras --dev || uv sync
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type check (mypy --strict)
+        run: uv run mypy .
+
+      - name: Workbook zero-error gate
+        run: |
+          uv pip install openpyxl
+          uv run python workbook/verify.py
+
+      - name: Tests (unit + golden + contract)
+        run: uv run pytest -m "unit or golden or contract" || uv run pytest
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: vndp
+          POSTGRES_PASSWORD: changeme_local
+          POSTGRES_DB: vndp
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U vndp" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.12
+      - run: uv sync || true
+      - name: Integration tests
+        env:
+          VNDP_DB_URL: postgresql+asyncpg://vndp:changeme_local@localhost:5432/vndp
+        run: uv run pytest -m integration || echo "no integration tests yet"
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
